@@ -22,7 +22,9 @@
     notificationHub = <any>"notificationHub",
     sendGrid = <any>"sendGrid",
     twilioSms = <any>"twilioSms",
-    aadtoken = <any>"aadToken"
+    aadtoken = <any>"aadToken",
+    excel = <any>"excel",
+    outlook = <any>"outlook"
 }
 
 export interface BindingConfig {
@@ -103,7 +105,8 @@ export enum ResourceType {
     EventHub = <any>"EventHub",
     ServiceBus = <any>"ServiceBus",
     DocumentDB = <any>"DocumentDB",
-    ApiHub = <any>"ApiHub"
+    ApiHub = <any>"ApiHub",
+    MSGraph = <any>"MSGraph"
 }
 
 export class SettingType{
@@ -114,6 +117,7 @@ export class SettingType{
     public static int = "int";
     public static picker = "picker";
     public static checkBoxList = "checkBoxList";
+    public static token = "token";
 }
 
 export interface UIFunctionConfig {

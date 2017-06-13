@@ -1,4 +1,4 @@
-import {Component, ChangeDetectionStrategy, SimpleChange, Input, Output, EventEmitter, OnInit, OnDestroy, ElementRef, OnChanges, Inject, AfterContentChecked} from '@angular/core';
+﻿import {Component, ChangeDetectionStrategy, SimpleChange, Input, Output, EventEmitter, OnInit, OnDestroy, ElementRef, OnChanges, Inject, AfterContentChecked} from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription';
@@ -9,7 +9,7 @@ import 'rxjs/add/observable/zip';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import { AiService } from '../shared/services/ai.service';
 
-import { BindingInputBase, CheckboxInput, TextboxInput, TextboxIntInput, LabelInput, SelectInput, PickerInput, CheckBoxListInput } from '../shared/models/binding-input';
+import { BindingInputBase, CheckboxInput, TextboxInput, TextboxIntInput, LabelInput, SelectInput, PickerInput, CheckBoxListInput, TokenInput } from '../shared/models/binding-input';
 import {Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType} from '../shared/models/binding';
 import {BindingManager} from '../shared/models/binding-manager';
 import {BindingInputList} from '../shared/models/binding-input-list';
@@ -204,7 +204,7 @@ export class BindingComponent{
                         return s.name === setting.name;
                     });
 
-                    var settigValue = (functionSettingV) ? functionSettingV.value : setting.defaultValue;
+                    var settingValue = (functionSettingV) ? functionSettingV.value : setting.defaultValue;
 
                     var isHidden = this.isHidden(setting.name);
                     if (isHidden) {
@@ -224,7 +224,7 @@ export class BindingComponent{
                             intInput.isHidden = isHidden;
                             intInput.label = this.replaceVariables(setting.label, bindings.variables);
                             intInput.required = setting.required;
-                            intInput.value = settigValue;
+                            intInput.value = settingValue;
                             intInput.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
                             intInput.validators = setting.validators;
                             intInput.placeholder = this.replaceVariables(setting.placeholder, bindings.variables) || intInput.label;
@@ -239,9 +239,9 @@ export class BindingComponent{
                                 input.isHidden = isHidden;
                                 input.label = this.replaceVariables(setting.label, bindings.variables);
                                 input.required = setting.required;
-                                input.value = settigValue;
+                                input.value = settingValue;
                                 if (input.resource === ResourceType.Storage) {
-                                    selectedStorage = settigValue ? settigValue : input.items[0];
+                                    selectedStorage = settingValue ? settingValue : input.items[0];
                                 }
                                 input.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
                                 input.placeholder = this.replaceVariables(setting.placeholder, bindings.variables) || input.label;
@@ -253,7 +253,7 @@ export class BindingComponent{
                                 input.isHidden = isHidden;
                                 input.label = this.replaceVariables(setting.label, bindings.variables);
                                 input.required = setting.required;
-                                input.value = settigValue;
+                                input.value = settingValue;
                                 input.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
                                 input.validators = setting.validators;
                                 input.placeholder = this.replaceVariables(setting.placeholder, bindings.variables) || input.label;
@@ -287,7 +287,7 @@ export class BindingComponent{
                             ddInput.isHidden = isHidden;
                             ddInput.label = setting.label;
                             ddInput.enum = setting.enum;
-                            ddInput.value = settigValue || setting.enum[0].value;
+                            ddInput.value = settingValue || setting.enum[0].value;
                             ddInput.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
                             this.model.inputs.push(ddInput);
                             break;
@@ -297,7 +297,7 @@ export class BindingComponent{
                             cblInput.isHidden = isHidden;
                             cblInput.label = setting.label;
                             cblInput.enum = setting.enum;
-                            cblInput.value = settigValue;
+                            cblInput.value = settingValue;
                             cblInput.toInternalValue();
                             cblInput.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
                             this.model.inputs.push(cblInput);
@@ -309,10 +309,23 @@ export class BindingComponent{
                             chInput.type = setting.value;
                             chInput.label = this.replaceVariables(setting.label, bindings.variables);
                             chInput.required = false;
-                            chInput.value = settigValue;
+                            chInput.value = settingValue;
                             chInput.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
                             this.model.inputs.push(chInput);
                             break;
+                        case SettingType.token:
+                            let input = new TokenInput();
+                            input.resource = setting.resource;
+                            input.items = this._getResourceAppSettings(setting.resource);
+                            input.id = setting.name;
+                            input.isHidden = isHidden;
+                            input.label = this.replaceVariables(setting.label, bindings.variables);
+                            input.required = setting.required;
+                            input.value = settingValue;
+                            input.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
+                            input.validators = setting.validators;
+                            input.placeholder = this.replaceVariables(setting.placeholder, bindings.variables) || input.label;
+                            this.model.inputs.push(input);
                     }
                     order++;
 
@@ -453,26 +466,49 @@ export class BindingComponent{
                 return s.name == input.id;
             });
             var isNotRequiredEmptyInput = (!input.required && !input.value && input.value !== false);
-            if (setting) {
-                if (input instanceof PickerInput && input.resource && input.resource === ResourceType.Storage) {
-                    selectedStorage = input.value;
-                }
-                setting.value = input.value;
 
-                if (setting.noSave || isNotRequiredEmptyInput) {
-                    setting.noSave = true;
+            // Handle prepending and appending % in case of principal ID for MS Graph tokens
+            // Users can either input an app setting or an expression to be evaluated
+            // TODO: make this cleaner
+            if (input instanceof TokenInput && input.resource == ResourceType.MSGraph) {
+
+                var val;
+                if (input.value.startsWith("{") || input.value.startsWith("%")) {
+                    val = input.value;
                 } else {
-                    delete setting.noSave;
+                    val = "%".concat(input.value.concat("%"));
                 }
+                if (setting) {
+                    setting.value = val;
+                } else {
+                      setting = {
+                          name: input.id,
+                          value: val
+                      }
+                  }
             } else {
-                if (!input.changeValue && !input.isHidden && !isNotRequiredEmptyInput) {
-                    setting = {
-                        name: input.id,
-                        value: input.value
-                    };
-                    this.bindingValue.settings.push(setting);
+                if (setting) {
+                    if (input instanceof PickerInput && input.resource && input.resource === ResourceType.Storage) {
+                        selectedStorage = input.value;
+                    }
+                    setting.value = input.value;
+
+                    if (setting.noSave || isNotRequiredEmptyInput) {
+                        setting.noSave = true;
+                    } else {
+                        delete setting.noSave;
+                    }
+                } else {
+                    if (!input.changeValue && !input.isHidden && !isNotRequiredEmptyInput) {
+                        setting = {
+                            name: input.id,
+                            value: input.value
+                        };
+                        this.bindingValue.settings.push(setting);
+                    }
                 }
             }
+
             if (input instanceof CheckBoxListInput && setting) {
                 setting.value = (<CheckBoxListInput>input).getArrayValue();
             }
@@ -630,6 +666,14 @@ export class BindingComponent{
                for (var key in this._appSettings) {
                    var value = this._appSettings[key].toLowerCase();
                    if (value.indexOf("accountendpoint") > -1 && value.indexOf("documents.azure.com") > -1) {
+                       result.push(key);
+                   }
+               }
+               break;
+           case ResourceType.MSGraph:
+               for (var key in this._appSettings) {
+                   var value = this._appSettings[key].toLowerCase();
+                   if (key.startsWith("Identity.")) {
                        result.push(key);
                    }
                }

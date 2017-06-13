@@ -129,3 +129,16 @@ export class CheckBoxListInput extends BindingInputBase<any>{
     }
 
 }
+
+export class TokenInput extends BindingInputBase<string>{
+    resource: ResourceType;
+    inProcess: boolean = false;
+    items: string[];
+
+    constructor() {
+        super();
+        this.type = SettingType.token;
+        this.noErrorClass = '';
+        this.errorClass = 'has-error';
+    }
+}

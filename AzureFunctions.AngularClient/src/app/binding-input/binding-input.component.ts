@@ -1,25 +1,28 @@
-import {Component, Input, Output, ChangeDetectionStrategy, EventEmitter} from '@angular/core';
-import {TranslateService, TranslatePipe} from '@ngx-translate/core';
-
+﻿import { Component, Input, Output, ChangeDetectionStrategy, EventEmitter } from '@angular/core';
+import { TokenInput, TextboxInput } from '../shared/models/binding-input';
+import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { BindingInputBase } from '../shared/models/binding-input';
-import {PortalService} from '../shared/services/portal.service';
-import {UserService} from '../shared/services/user.service';
-import {PickerInput} from '../shared/models/binding-input';
-import {BroadcastService} from '../shared/services/broadcast.service';
-import {BroadcastEvent} from '../shared/models/broadcast-event';
-import {SettingType, ResourceType, UIFunctionBinding} from '../shared/models/binding';
-import {DropDownElement} from '../shared/models/drop-down-element';
-import {PortalResources} from '../shared/models/portal-resources';
-import {GlobalStateService} from '../shared/services/global-state.service';
-import {FunctionApp} from '../shared/function-app';
+import { PortalService } from '../shared/services/portal.service';
+import { UserService } from '../shared/services/user.service';
+import { PickerInput } from '../shared/models/binding-input';
+import { BroadcastService } from '../shared/services/broadcast.service';
+import { BroadcastEvent } from '../shared/models/broadcast-event';
+import { SettingType, ResourceType, UIFunctionBinding } from '../shared/models/binding';
+import { DropDownElement } from '../shared/models/drop-down-element';
+import { PortalResources } from '../shared/models/portal-resources';
+import { GlobalStateService } from '../shared/services/global-state.service';
+import { FunctionApp } from '../shared/function-app';
 import { CacheService } from './../shared/services/cache.service';
 import { ArmObj } from './../shared/models/arm/arm-obj';
 import { ArmService } from './../shared/services/arm.service';
+import { Subject } from 'rxjs/Subject';
+
+declare var require: any
 
 @Component({
-  selector: 'binding-input',
-  templateUrl: './binding-input.component.html',
-  styleUrls: ['./binding-input.component.css'],
+    selector: 'binding-input',
+    templateUrl: './binding-input.component.html',
+    styleUrls: ['./binding-input.component.css'],
 })
 export class BindingInputComponent {
     @Input() binding: UIFunctionBinding;
@@ -32,6 +35,7 @@ export class BindingInputComponent {
     private _input: BindingInputBase<any>;
     private showTryView: boolean;
     @Input() public functionApp: FunctionApp;
+    @Output() select = new Subject<string>();
 
     constructor(
         private _portalService: PortalService,
@@ -70,6 +74,48 @@ export class BindingInputComponent {
 
     get input(): BindingInputBase<any> {
         return this._input;
+    }
+
+    openLogin(input: PickerInput) {
+        var WindowsAzure = require('aadlogin/azure-mobile-apps-client');
+        var mainURL = this.functionApp.getMainSiteUrl();
+        var client = new WindowsAzure.MobileServiceClient(mainURL);
+
+        var that = this;
+        // First, ask user for credentials
+        var options = {
+            parameters: {
+                prompt: 'login'
+            }
+        };
+        var loginPromise = client.loginWithOptions('aad', options);
+        loginPromise.then(function () {
+            var appSettingName = "";
+            // Retrieve OID from /.auth/me 
+            var authMe = mainURL.concat("/.auth/me");
+            var invokePromise = client.invokeApi(authMe);
+            invokePromise.then(function (results) {
+                var response;
+                // Response prepended and appended with [, ]
+                if (results.responseText[0] == '[') {
+                    response = results.responseText.substring(1, results.responseText.length - 1);
+                }
+                var json = JSON.parse(response);
+                var user_claims = json.user_claims;
+                var oid;
+                for (var i = 0; i < user_claims.length; i++) {
+                    if (user_claims[i].typ == "http://schemas.microsoft.com/identity/claims/objectidentifier") {
+                        oid = user_claims[i].val;
+                    }
+                }
+
+                // App setting name in form: Identity.<alias>
+                appSettingName = "Identity.".concat(json.user_id.substring(0, json.user_id.indexOf("@")));
+                input.value = oid;
+                that.createApplicationSetting(appSettingName, oid);  // create new app setting for identity
+                that.finishResourcePickup(appSettingName, input); // set selected drop-down item to app setting just created
+            });
+        });
     }
 
     openPicker(input: PickerInput) {
@@ -220,6 +266,28 @@ export class BindingInputComponent {
         }
         picker.inProcess = false;
         this._globalStateService.clearBusyState();
+    }
+
+    // Modeled off of EventHub trigger's 'custom' tab when creating a new Event Hub connection
+    private createApplicationSetting(appSettingName: string, appSettingValue: string) {
+        if (appSettingName && appSettingValue) {
+            var selectInProcess = true;
+            this._globalStateService.setBusyState();
+            this._cacheService.postArm(`${this.functionApp.site.id}/config/appsettings/list`, true).flatMap(r => {
+                var appSettings: ArmObj<any> = r.json();
+                appSettings.properties[appSettingName] = appSettingValue;
+                return this._cacheService.putArm(appSettings.id, this._armService.websiteApiVersion, appSettings);
+            })
+                .do(null, e => {
+                    this._globalStateService.clearBusyState();
+                    selectInProcess = false;
+                    console.log(e);
+                })
+                .subscribe(r => {
+                    this._globalStateService.clearBusyState();
+                    this.select.next(appSettingName);
+                });
+        }
     }
 
     setBottomDescription(id: string, value: any) {
