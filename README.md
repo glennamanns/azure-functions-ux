@@ -38,17 +38,19 @@ AADClientSecret = <string>
 aiInstrumentationKey = <GUID> (optional to track AppInsights events)
  ```
 
-The following permission must be added: \n
-Windows Azure Service Management API -> Access Azure Service Management as organization users (preview) \n
+The following permission must be added:
 
-If the app is a Function Web App, the following 5 CORS rules must be set: \n
- https://functions.azure.com \n
- https://functions-staging.azure.com \n
- https://functions-next.azure.com \n
- https://localhost:44300 \n
- https://localhost \n
+Windows Azure Service Management API -> Access Azure Service Management as organization users (preview)
 
-4. Create a new IIS site from `inetmgr` with `https` binding on `44300` that points to `..\\AzureFunctionsPortal\\AzureFunctions` for root path. You will also need to share the AzureFunctions folder with the IIS_IUSRS group (permissions: Read & Execute, List folder contents, Read). Via the IIS manager, connect to the site as REDMOND\<your_alias>.
+If the app is a Function Web App, the following 5 CORS rules must be set:
+
+    1. https://functions.azure.com
+    2. https://functions-staging.azure.com
+    3. https://functions-next.azure.com
+    4. https://localhost:44300
+    5. https://localhost
+
+4. Create a new IIS site from `inetmgr` with `https` binding on `44300` that points to `..\\AzureFunctionsPortal\\AzureFunctions` for root path. Share the AzureFunctions folder with the IIS_IUSRS group (permissions: Read & Execute, List folder contents, Read). Via the IIS manager, connect to the site as REDMOND\<your_alias>.
 
 5. Clone the templates repo to a temporary location from [https://github.com/Azure/azure-webjobs-sdk-templates](https://github.com/Azure/azure-webjobs-sdk-templates)
 
