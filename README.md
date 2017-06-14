@@ -30,7 +30,7 @@
  ```
 
 3. Needed environment variables
-You'll need to create an AAD web application and set `https://localhost:44300` as a reply URI, then configure the following environment variable.
+You'll need to create an AAD web application and set `https://localhost:44300/manage` as a reply URI, then configure the following environment variables in `../AzureFunctions/Web.config`.
 
  ```
 AADClientId = <GUID>
@@ -38,7 +38,17 @@ AADClientSecret = <string>
 aiInstrumentationKey = <GUID> (optional to track AppInsights events)
  ```
 
-4. Create a new IIS site from `inetmgr` with `https` binding on `44300` that points to `..\\AzureFunctionsPortal\\AzureFunctions` for root path.
+The following permission must be added:
+Windows Azure Service Management API -> Access Azure Service Management as organization users (preview)
+
+If the app is a Function Web App, the following 5 CORS rules must be set:
+ https://functions.azure.com 
+ https://functions-staging.azure.com
+ https://functions-next.azure.com
+ https://localhost:44300
+ https://localhost
+
+4. Create a new IIS site from `inetmgr` with `https` binding on `44300` that points to `..\\AzureFunctionsPortal\\AzureFunctions` for root path. You will also need to share the AzureFunctions folder with the IIS_IUSRS group (permissions: Read & Execute, List folder contents, Read). Via the IIS manager, connect to the site as REDMOND\<your_alias>.
 
 5. Clone the templates repo to a temporary location from [https://github.com/Azure/azure-webjobs-sdk-templates](https://github.com/Azure/azure-webjobs-sdk-templates)
 
@@ -46,7 +56,7 @@ aiInstrumentationKey = <GUID> (optional to track AppInsights events)
 
 7. Create `app_data\\templates\\default` folder under `..\\AzureFunctionsPortal\\AzureFunctions`
  
-8. Copy the template build output to the default folder
+8. Copy the template build output to the default folder (`..azure-webjobs-sdk-templates\Functions.Templates\bin\Portal\Release\Azure.Functions.Templates.Portal`)
 
 9. You may need to run `%windir%\system32\inetsrv\appcmd unlock config -section:system.webServer/serverRuntime` from an elevated cmd window.
 
