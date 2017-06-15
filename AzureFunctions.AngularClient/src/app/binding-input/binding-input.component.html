@@ -93,16 +93,37 @@
     <input [fnWriteAccess]="functionApp"
            type="text"
            [(ngModel)]="input.value"
-           list="input.id"
+           [attr.list]="input.id"
            (ngModelChange)="inputChanged($event)"
            [disabled]="input.isDisabled" />
 
-    <datalist id="input.id">
+    <datalist id="{{input.id}}">
       <option *ngFor="let item of input.items" [value]="item">
     </datalist>
 
     <!-- Show link to retrieve principal id -->
-    <i *ngIf="!input.inProcess && !showTryVi" class="link" [class.select]="input.errorText" (click)="openLogin(input)"> {{ 'bindingInput_retrieve' | translate }}</i>
+    <i *ngIf="!input.inProcess && !showTryVi" class="link" [class.select]="input.errorText" (click)="openLogin(input)">{{ 'save new' | translate }}</i>
 
   </div>
+
+  <div *ngIf="input.type === 'textArea'" [ngClass]="input?.class">
+    <!-- Show large text area for C&P file -->
+    <textarea [fnWriteAccess]="functionApp"
+              id="input.id"
+              [(ngModel)]="input.value"
+              (ngModelChange)="inputChanged($event)"
+              rows="15"
+              cols="50"
+              style="background-color:white;color:black;">
+
+    </textarea>
+    <!--<input [fnWriteAccess]="functionApp"
+           id="{{input.id}}"
+           (ngModelChange)="inputChanged($event)"
+           [(ngModel)]="input.value"
+           type="text"
+           placeholder="{{input.placeholder}}"
+           [ngClass]="{'input-error':!!input.errorText}">-->
+  </div>
+
 </div>

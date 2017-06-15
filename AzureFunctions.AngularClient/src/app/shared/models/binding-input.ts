@@ -143,3 +143,15 @@ export class TokenInput extends BindingInputBase<string>{
         this.errorClass = 'has-error';
     }
 }
+
+
+export class TextAreaInput extends BindingInputBase<string>{
+    inProcess: boolean = false;
+
+    constructor() {
+        super();
+        this.type = SettingType.textArea;
+        this.noErrorClass = '';
+        this.errorClass = 'has-error';
+    }
+}

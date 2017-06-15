@@ -16,6 +16,7 @@ import { CacheService } from './../shared/services/cache.service';
 import { ArmObj } from './../shared/models/arm/arm-obj';
 import { ArmService } from './../shared/services/arm.service';
 import { Subject } from 'rxjs/Subject';
+import { VfsObject } from './../shared/models/vfs-object';
 
 declare var require: any
 
@@ -77,45 +78,64 @@ export class BindingInputComponent {
     }
 
     openLogin(input: PickerInput) {
-        var WindowsAzure = require('aadlogin/azure-mobile-apps-client');
-        var mainURL = this.functionApp.getMainSiteUrl();
-        var client = new WindowsAzure.MobileServiceClient(mainURL);
+        switch (input.resource) {
+            case ResourceType.MSGraph:
+                var WindowsAzure = require('aadlogin/azure-mobile-apps-client');
+                var mainURL = this.functionApp.getMainSiteUrl();
+                var client = new WindowsAzure.MobileServiceClient(mainURL);
 
-        var that = this;
-        // First, ask user for credentials
-        var options = {
-            parameters: {
-                prompt: 'login'
-            }
-        };
-        var loginPromise = client.loginWithOptions('aad', options);
-        loginPromise.then(function () {
-            var appSettingName = "";
-            // Retrieve OID from /.auth/me 
-            var authMe = mainURL.concat("/.auth/me");
-            var invokePromise = client.invokeApi(authMe);
-            invokePromise.then(function (results) {
-                var response;
-                // Response prepended and appended with [, ]
-                if (results.responseText[0] == '[') {
-                    response = results.responseText.substring(1, results.responseText.length - 1);
-                }
-                var json = JSON.parse(response);
-                var user_claims = json.user_claims;
-                var oid;
-                for (var i = 0; i < user_claims.length; i++) {
-                    if (user_claims[i].typ == "http://schemas.microsoft.com/identity/claims/objectidentifier") {
-                        oid = user_claims[i].val;
+                var that = this;
+                // First, ask user for credentials
+                var options = {
+                    parameters: {
+                        prompt: 'login'
                     }
+                };
+                var loginPromise = client.loginWithOptions('aad', options);
+                loginPromise.then(function () {
+                    var appSettingName = "";
+                    // Retrieve OID from /.auth/me 
+                    var authMe = mainURL.concat("/.auth/me");
+                    var invokePromise = client.invokeApi(authMe);
+                    invokePromise.then(function (results) {
+                        var response;
+                        // Response prepended and appended with [, ]
+                        if (results.responseText[0] == '[') {
+                            response = results.responseText.substring(1, results.responseText.length - 1);
+                        }
+                        var json = JSON.parse(response);
+                        var user_claims = json.user_claims;
+                        var oid;
+                        for (var i = 0; i < user_claims.length; i++) {
+                            if (user_claims[i].typ == "http://schemas.microsoft.com/identity/claims/objectidentifier") {
+                                oid = user_claims[i].val;
+                            }
+                        }
+
+                        // App setting name in form: Identity.<alias>
+                        appSettingName = "Identity.".concat(json.user_id.substring(0, json.user_id.indexOf("@")));
+                        input.value = oid;
+                        that.createApplicationSetting(appSettingName, oid);  // create new app setting for identity
+                        that.finishResourcePickup(appSettingName, input); // set selected drop-down item to app setting just created
+                    });
+                });
+                break;
+            case ResourceType.SAS:
+
+                var filenameInput = <HTMLInputElement>parent.document.getElementById("filename");
+
+                if (input.value === "" || filenameInput.value === "") {
+                    alert("Must enter SAS Url and filename");
+                    return;
                 }
 
-                // App setting name in form: Identity.<alias>
-                appSettingName = "Identity.".concat(json.user_id.substring(0, json.user_id.indexOf("@")));
-                input.value = oid;
-                that.createApplicationSetting(appSettingName, oid);  // create new app setting for identity
-                that.finishResourcePickup(appSettingName, input); // set selected drop-down item to app setting just created
-            });
-        });
+                var filename = filenameInput.value.replace(/.*\\|\..*$/g, '');
+                var appSettingName = filename + "_SASUrl";
+
+                this.createApplicationSetting(appSettingName, input.value); // create new app setting for URL
+                this.finishResourcePickup(appSettingName, input); // set selected drop-down item to app setting just created
+        }
+
     }
 
     openPicker(input: PickerInput) {

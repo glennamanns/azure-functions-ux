@@ -26,7 +26,8 @@
     excel = <any>"excel",
     outlook = <any>"outlook",
     onedrive = <any>"onedrive",
-    GraphWebhook = <any>"GraphWebhook"
+    GraphWebhook = <any>"GraphWebhook",
+    centipede = <any>"centipede"
 }
 
 export interface BindingConfig {
@@ -108,7 +109,8 @@ export enum ResourceType {
     ServiceBus = <any>"ServiceBus",
     DocumentDB = <any>"DocumentDB",
     ApiHub = <any>"ApiHub",
-    MSGraph = <any>"MSGraph"
+    MSGraph = <any>"MSGraph",
+    SAS = <any>"SAS"
 }
 
 export class SettingType{
@@ -120,6 +122,7 @@ export class SettingType{
     public static picker = "picker";
     public static checkBoxList = "checkBoxList";
     public static token = "token";
+    public static textArea = "textArea";
 }
 
 export interface UIFunctionConfig {

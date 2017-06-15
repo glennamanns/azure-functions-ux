@@ -9,7 +9,7 @@ import 'rxjs/add/observable/zip';
 import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { AiService } from '../shared/services/ai.service';
 
-import { BindingInputBase, CheckboxInput, TextboxInput, TextboxIntInput, LabelInput, SelectInput, PickerInput, CheckBoxListInput, TokenInput } from '../shared/models/binding-input';
+import { BindingInputBase, CheckboxInput, TextboxInput, TextboxIntInput, LabelInput, SelectInput, PickerInput, CheckBoxListInput, TokenInput, TextAreaInput } from '../shared/models/binding-input';
 import { Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType } from '../shared/models/binding';
 import { BindingManager } from '../shared/models/binding-manager';
 import { BindingInputList } from '../shared/models/binding-input-list';
@@ -131,7 +131,7 @@ export class BindingComponent {
         });
 
         this._elementRef = elementRef;
-        this.GraphWebhook = this.bindingValue.type == BindingType.GraphWebhook;
+        // this.GraphWebhook = this.bindingValue.type == BindingType.GraphWebhook;
 
         this._subscription = this._broadcastService.subscribe(BroadcastEvent.IntegrateChanged, () => {
 
@@ -381,9 +381,21 @@ export class BindingComponent {
                             this.model.inputs.push(chInput);
                             break;
                         case SettingType.token:
-                            let input = new TokenInput();
-                            input.resource = setting.resource;
-                            input.items = this._getResourceAppSettings(setting.resource);
+                            let tokenInput = new TokenInput();
+                            tokenInput.resource = setting.resource;
+                            tokenInput.items = this._getResourceAppSettings(setting.resource);
+                            tokenInput.id = setting.name;
+                            tokenInput.isHidden = isHidden;
+                            tokenInput.label = this.replaceVariables(setting.label, bindings.variables);
+                            tokenInput.required = setting.required;
+                            tokenInput.value = settingValue;
+                            tokenInput.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
+                            tokenInput.validators = setting.validators;
+                            tokenInput.placeholder = this.replaceVariables(setting.placeholder, bindings.variables) || tokenInput.label;
+                            this.model.inputs.push(tokenInput);
+                            break;
+                        case SettingType.textArea:
+                            let input = new TextAreaInput();
                             input.id = setting.name;
                             input.isHidden = isHidden;
                             input.label = this.replaceVariables(setting.label, bindings.variables);
@@ -525,9 +537,21 @@ export class BindingComponent {
 
             if (input instanceof CheckBoxListInput && setting) {
                 setting.value = (<CheckBoxListInput>input).getArrayValue();
-                if (input.id === "ChangeType") {
+                if (input.id === "ChangeType") { // Convert from string[] to string for Graph Webhook
                     setting.value = String(setting.value);
                 }
+            }
+
+            if (input.id === "logicApp" && input.value != "") {
+                // Find filename
+                var filename = this.model.inputs.find((s) => {
+                    return s.id == "filename";
+                }).value;
+                // Request url needs to be in form <function scm>/api/vfs/path/from/D:/home/to/file.txt
+                var url = "https://" + this.functionApp.site.name + ".scm.azurewebsites.net/api/vfs/site/wwwroot/integration/" + filename;
+
+                // save contents of file
+                this.functionApp.saveFile(url, input.value).subscribe();
             }
 
             if (setting && setting.name === "route") {
@@ -695,6 +719,13 @@ export class BindingComponent {
                 for (var key in this._appSettings) {
                     var value = this._appSettings[key].toLowerCase();
                     if (key.startsWith("Identity.")) {
+                        result.push(key);
+                    }
+                }
+                break;
+            case ResourceType.SAS:
+                for (var key in this._appSettings) {
+                    if (key.endsWith("SASUrl")) {
                         result.push(key);
                     }
                 }
