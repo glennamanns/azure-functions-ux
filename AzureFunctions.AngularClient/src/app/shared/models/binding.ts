@@ -24,7 +24,9 @@
     twilioSms = <any>"twilioSms",
     aadtoken = <any>"aadToken",
     excel = <any>"excel",
-    outlook = <any>"outlook"
+    outlook = <any>"outlook",
+    onedrive = <any>"onedrive",
+    GraphWebhook = <any>"GraphWebhook"
 }
 
 export interface BindingConfig {
