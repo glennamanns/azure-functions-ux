@@ -135,7 +135,31 @@ export class BindingInputComponent {
                 this.createApplicationSetting(appSettingName, input.value); // create new app setting for URL
                 this.finishResourcePickup(appSettingName, input); // set selected drop-down item to app setting just created
         }
+    }
 
+    findSAS(input: TextboxInput) {
+        // 1. Determine app setting name
+        var filenameInput = <HTMLInputElement>parent.document.getElementById("filename");
+
+        if (input.value === "" || filenameInput.value === "") {
+            alert("Must enter Resource Id and Filename");
+            return;
+        }
+
+        var filename = filenameInput.value.replace(/.*\\|\..*$/g, '');
+        var appSettingName = filename + "_SASUrl";
+
+        // 2. Find SAS Url
+        var url = input.value + "/listCallbackUrl";
+        var that = this;
+        var response = that._cacheService
+            .postArm(url, null, "2016-06-01")
+            .toPromise()
+            .then(
+            function (payload) {
+                var value = payload.json().value;
+                that.createApplicationSetting(appSettingName, value); // create new app setting for SAS URL
+            });
     }
 
     openPicker(input: PickerInput) {

@@ -590,7 +590,7 @@ export class BindingComponent {
     }
 
     goClicked(action: Action) {
-
+ 
         action.settingValues = [];
         action.settings.forEach((s) => {
             var setting = this.bindingValue.settings.find((v) => {

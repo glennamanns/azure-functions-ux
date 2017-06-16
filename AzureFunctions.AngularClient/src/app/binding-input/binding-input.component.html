@@ -35,6 +35,7 @@
         </pop-over>
 
         <div *ngIf="description && !input.errorText">{{description}}</div>
+        <i *ngIf="!input.inProcess && !showTryVi && input.id === 'resourceId'" class="link" [class.select]="input.errorText" (click)="findSAS(input)">{{ 'find SAS' | translate }}</i>
 
         <div *ngIf="binding.direction.toString() === 'out' && input.id === 'name'">
             <input [fnWriteAccess]="functionApp" id="{{input.id}}" (ngModelChange)="functionReturnValueChanged($event)" [(ngModel)]="functionReturnValue" type="checkbox" style="margin-left:0px;">
