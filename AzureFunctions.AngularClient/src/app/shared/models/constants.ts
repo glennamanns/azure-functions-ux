@@ -1,4 +1,4 @@
-export class HttpMethods {
+﻿export class HttpMethods {
     public GET = "get";
     public POST = "post";
     public DELETE = "delete";
@@ -39,6 +39,11 @@ export class Constants {
     public static msPortalHostName = 'https://ms.portal.azure.com';
     public static ReadWriteMode = 'readWrite'.toLocaleLowerCase();
     public static ReadOnlyMode = 'readOnly'.toLocaleLowerCase();
+
+    public static BYOBTokenMapSettingName = 'BYOB_TokenMap';
+    public static defaultBYOBLocation = 'D:\home\data\byob_graphmap';
+    public static MSGraphResource = 'https://microsoft.graph.com';
+    public static latestMSGraphVersion = '1.0';
 }
 
 export class SiteTabIds{

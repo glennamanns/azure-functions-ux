@@ -26,7 +26,8 @@
     excel = <any>"excel",
     outlook = <any>"outlook",
     onedrive = <any>"onedrive",
-    GraphWebhook = <any>"GraphWebhook"
+    GraphWebhook = <any>"GraphWebhook",
+    GraphWebhookTrigger = <any>"GraphWebhookTrigger"
 }
 
 export interface BindingConfig {
@@ -158,4 +159,43 @@ export interface Action {
 
     settingValues: string[];
     templateId: string;
+}
+
+export class Moniker {
+    public resource: string;
+    public principalId: string;
+
+    constructor(resource: string, principalId: string) {
+        resource = resource;
+        principalId = principalId;
+    }
+}
+
+export class GraphSubscription {
+    public changeType: string;
+    public notificationUrl: string;
+    public resource: string;
+    public expirationDateTime: string;
+    public clientState: string;
+    public id: string;
+
+    constructor(changeType: string, notificationUrl: string, resource: string, expirationDatetime: string, clientState?: string) {
+        this.changeType = changeType;
+        this.notificationUrl = notificationUrl;
+        this.resource = resource;
+        this.expirationDateTime = expirationDatetime;
+        this.clientState = clientState;
+    }
+}
+
+export class GraphSubscriptionEntry {
+    public SubscriptionId: string;
+    public ClientState: string;
+    public Moniker: string;
+
+    constructor(SubscriptionId: string, Moniker: string, ClientState?: string) {
+        this.SubscriptionId = SubscriptionId;
+        this.Moniker = Moniker;
+        this.ClientState = ClientState;
+    }
 }

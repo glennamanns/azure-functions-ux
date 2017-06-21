@@ -1,4 +1,5 @@
 ﻿import { Component, ChangeDetectionStrategy, SimpleChange, Input, Output, EventEmitter, OnInit, OnDestroy, ElementRef, OnChanges, Inject, AfterContentChecked } from '@angular/core';
+import { Headers } from '@angular/http';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription';
@@ -10,7 +11,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { AiService } from '../shared/services/ai.service';
 
 import { BindingInputBase, CheckboxInput, TextboxInput, TextboxIntInput, LabelInput, SelectInput, PickerInput, CheckBoxListInput, TokenInput } from '../shared/models/binding-input';
-import { Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType } from '../shared/models/binding';
+import { Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType, Moniker, GraphSubscription, GraphSubscriptionEntry } from '../shared/models/binding';
 import { BindingManager } from '../shared/models/binding-manager';
 import { BindingInputList } from '../shared/models/binding-input-list';
 import { BroadcastService } from '../shared/services/broadcast.service';
@@ -22,9 +23,11 @@ import { FunctionApp } from '../shared/function-app';
 import { CacheService } from '../shared/services/cache.service';
 import { ArmObj } from '../shared/models/arm/arm-obj';
 import { AuthSettings } from '../shared/models/auth-settings';
+import { Constants } from "app/shared/models/constants";
 
 declare var jQuery: any;
 declare var marked: any;
+declare var require: any
 
 @Component({
     selector: 'binding',
@@ -131,7 +134,6 @@ export class BindingComponent {
         });
 
         this._elementRef = elementRef;
-        this.GraphWebhook = this.bindingValue.type == BindingType.GraphWebhook;
 
         this._subscription = this._broadcastService.subscribe(BroadcastEvent.IntegrateChanged, () => {
 
@@ -251,6 +253,8 @@ export class BindingComponent {
             if (that.bindingValue.hiddenList && that.bindingValue.hiddenList.length >= 0) {
                 this.newFunction = true;
             }
+
+            this.GraphWebhook = that.bindingValue.type == BindingType.GraphWebhook;
 
             this.model.actions = [];
             this.model.warnings = [];
@@ -381,18 +385,18 @@ export class BindingComponent {
                             this.model.inputs.push(chInput);
                             break;
                         case SettingType.token:
-                            let input = new TokenInput();
-                            input.resource = setting.resource;
-                            input.items = this._getResourceAppSettings(setting.resource);
-                            input.id = setting.name;
-                            input.isHidden = isHidden;
-                            input.label = this.replaceVariables(setting.label, bindings.variables);
-                            input.required = setting.required;
-                            input.value = settingValue;
-                            input.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
-                            input.validators = setting.validators;
-                            input.placeholder = this.replaceVariables(setting.placeholder, bindings.variables) || input.label;
-                            this.model.inputs.push(input);
+                            let tokenInput = new TokenInput();
+                            tokenInput.resource = setting.resource;
+                            tokenInput.items = this._getResourceAppSettings(setting.resource);
+                            tokenInput.id = setting.name;
+                            tokenInput.isHidden = isHidden;
+                            tokenInput.label = this.replaceVariables(setting.label, bindings.variables);
+                            tokenInput.required = setting.required;
+                            tokenInput.value = settingValue;
+                            tokenInput.help = this.replaceVariables(setting.help, bindings.variables) || this.replaceVariables(setting.label, bindings.variables);
+                            tokenInput.validators = setting.validators;
+                            tokenInput.placeholder = this.replaceVariables(setting.placeholder, bindings.variables) || tokenInput.label;
+                            this.model.inputs.push(tokenInput);
                             break;
                     }
                     order++;
@@ -525,7 +529,7 @@ export class BindingComponent {
 
             if (input instanceof CheckBoxListInput && setting) {
                 setting.value = (<CheckBoxListInput>input).getArrayValue();
-                if (input.id === "ChangeType") {
+                if (input.id === "ChangeType") { // Convert from string[] to string for Graph Webhook
                     setting.value = String(setting.value);
                 }
             }
@@ -556,8 +560,103 @@ export class BindingComponent {
         this.isDirty = false;
     }
 
-    saveWebHook() {
-        alert(':(');
+    saveWebHook() {     
+        var resource = 'https://graph.microsoft.com';
+        // 1. Retrieve subscription parameters from input values
+        var subscriptionResource = this.model.inputs.find((input) => {
+            return input.id === "Listen";
+        });
+        var changeTypeInput = this.model.inputs.find((input) => {
+            return input.id === "ChangeType";
+        });
+        var changeType = String((<CheckBoxListInput>changeTypeInput).getArrayValue()); // cast input value to string[], then convert to string for POST request
+        var expiration = new Date();
+        expiration.setUTCMilliseconds(expiration.getUTCMilliseconds() + 4 * 60 * 1000);
+
+        var notificationUrl = this.functionApp.getMainSiteUrl() + "/admin/extensions/O365Extension"
+      
+        var subscription = new GraphSubscription(changeType, notificationUrl, subscriptionResource.value, expiration.toISOString());
+
+        var token = null;
+
+        var WindowsAzure = require('aadlogin/azure-mobile-apps-client');
+        var mainURL = this.functionApp.getMainSiteUrl();
+        var client = new WindowsAzure.MobileServiceClient(mainURL);
+
+        // 2. Retrieve graph token through function app
+        var that = this;
+        var options = {
+            parameters: {
+                resource: resource
+            }
+        };
+        // 2.1 Login to AAD for Graph resource
+        var loginPromise = client.loginWithOptions('aad', options);
+        loginPromise.then(function (response) {
+            // 2.2 retrieve access token
+            var authMe = mainURL.concat("/.auth/me");
+            var invokePromise = client.invokeApi(authMe);
+            invokePromise.then(function (results) {
+                var response;
+                // Response prepended and appended with [ ]
+                if (results.responseText[0] == '[') {
+                    response = results.responseText.substring(1, results.responseText.length - 1);
+                }
+
+                var json = JSON.parse(response);
+                token = json.access_token;
+                var user_claims = json.user_claims;
+                var oid;
+                for (var i = 0; i < user_claims.length; i++) {
+                    if (user_claims[i].typ == "http://schemas.microsoft.com/identity/claims/objectidentifier") {
+                        oid = user_claims[i].val;
+                    }
+                }
+
+                // 2.3 use graph token to subscribe to MS graph resource
+                that.subscribeToGraphResource(subscription, token).subscribe(subscription => {
+                    alert(subscription);
+                    // 3. Save new file containing the mapping: subscription ID <--> principal ID
+                    var moniker = new Moniker(resource, oid);
+                    var entry = new GraphSubscriptionEntry(subscription, JSON.stringify(moniker));
+                    var storageLocation = that.getBYOBStorageLocation().subscribe(storageLocation => {
+                        // Get storage location; app setting overrides default
+                        if (typeof storageLocation == 'undefined') {
+                            storageLocation = Constants.defaultBYOBLocation.replace(/\\/g, '/').split("D:/home")[1];
+                        } else {
+                            storageLocation = storageLocation.replace(/\\/g, '/').split("D:/home")[1];
+                        }
+                        alert(storageLocation);
+                        var scm = that.functionApp.getScmUrl().concat("/api/vfs", storageLocation, '/', subscription);
+                        alert('new url:' + scm);
+                        that.functionApp.saveFile(scm, JSON.stringify(entry)).subscribe();  
+                    });  
+                });                        
+            });
+        });
+    }
+
+    private getBYOBStorageLocation() {
+        // if app setting set, retrieve location after D:\home (vfs prepends path with D:\home)
+        return this._cacheService.postArm(`${this.functionApp.site.id}/config/appsettings/list`)
+            .map(r => {
+                let appSettingsArm: ArmObj<any> = r.json();
+                return appSettingsArm.properties[Constants.BYOBTokenMapSettingName];
+            });
+    }
+
+    private subscribeToGraphResource(subscription: GraphSubscription, token: string) {
+        var url = "https://graph.microsoft.com/v1.0/subscriptions";
+        var headers = new Headers();
+        headers.append('Content-Type', 'application/json');
+        headers.append('Authorization', `Bearer ${token}`);
+        var content = JSON.stringify(subscription);
+        alert(content);
+        return this._cacheService.post(url, null, headers, JSON.stringify(subscription))
+            .map(r => {
+                let newSubscription: GraphSubscription = r.json();
+                return newSubscription.id;
+            });
     }
 
     onValidChanged(input: BindingInputBase<any>) {
@@ -566,7 +665,7 @@ export class BindingComponent {
     }
 
     goClicked(action: Action) {
-
+ 
         action.settingValues = [];
         action.settings.forEach((s) => {
             var setting = this.bindingValue.settings.find((v) => {
