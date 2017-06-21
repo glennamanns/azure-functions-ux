@@ -42,7 +42,7 @@ export class Constants {
 
     public static BYOBTokenMapSettingName = 'BYOB_TokenMap';
     public static defaultBYOBLocation = 'D:\home\data\byob_graphmap';
-    public static MSGraphResource = 'https://microsoft.graph.com';
+    public static MSGraphResource = 'https://graph.microsoft.com';
     public static latestMSGraphVersion = '1.0';
 }
 

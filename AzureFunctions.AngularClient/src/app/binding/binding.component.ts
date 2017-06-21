@@ -1,5 +1,6 @@
 ﻿import { Component, ChangeDetectionStrategy, SimpleChange, Input, Output, EventEmitter, OnInit, OnDestroy, ElementRef, OnChanges, Inject, AfterContentChecked } from '@angular/core';
 import { Headers } from '@angular/http';
+import { UUID } from 'angular2-uuid';
 import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 import { Subscription } from 'rxjs/Subscription';
@@ -561,7 +562,6 @@ export class BindingComponent {
     }
 
     saveWebHook() {     
-        var resource = 'https://graph.microsoft.com';
         // 1. Retrieve subscription parameters from input values
         var subscriptionResource = this.model.inputs.find((input) => {
             return input.id === "Listen";
@@ -571,11 +571,12 @@ export class BindingComponent {
         });
         var changeType = String((<CheckBoxListInput>changeTypeInput).getArrayValue()); // cast input value to string[], then convert to string for POST request
         var expiration = new Date();
-        expiration.setUTCMilliseconds(expiration.getUTCMilliseconds() + 4 * 60 * 1000);
+        expiration.setUTCMilliseconds(expiration.getUTCMilliseconds() + 4230 * 60 * 1000);
 
         var notificationUrl = this.functionApp.getMainSiteUrl() + "/admin/extensions/O365Extension"
-      
-        var subscription = new GraphSubscription(changeType, notificationUrl, subscriptionResource.value, expiration.toISOString());
+        var clientState = UUID.UUID();
+
+        var subscription = new GraphSubscription(changeType, notificationUrl, subscriptionResource.value, expiration.toISOString(), clientState);
 
         var token = null;
 
@@ -587,7 +588,7 @@ export class BindingComponent {
         var that = this;
         var options = {
             parameters: {
-                resource: resource
+                resource: Constants.MSGraphResource
             }
         };
         // 2.1 Login to AAD for Graph resource
@@ -615,25 +616,27 @@ export class BindingComponent {
 
                 // 2.3 use graph token to subscribe to MS graph resource
                 that.subscribeToGraphResource(subscription, token).subscribe(subscription => {
-                    alert(subscription);
                     // 3. Save new file containing the mapping: subscription ID <--> principal ID
-                    var moniker = new Moniker(resource, oid);
-                    var entry = new GraphSubscriptionEntry(subscription, JSON.stringify(moniker));
-                    var storageLocation = that.getBYOBStorageLocation().subscribe(storageLocation => {
+                    var moniker = new Moniker(Constants.MSGraphResource, null, oid);
+                    var entry = new GraphSubscriptionEntry(subscription, clientState, JSON.stringify(moniker));
+                    that.getBYOBStorageLocation().subscribe(storageLocation => {
                         // Get storage location; app setting overrides default
                         if (typeof storageLocation == 'undefined') {
                             storageLocation = Constants.defaultBYOBLocation.replace(/\\/g, '/').split("D:/home")[1];
                         } else {
                             storageLocation = storageLocation.replace(/\\/g, '/').split("D:/home")[1];
                         }
-                        alert(storageLocation);
                         var scm = that.functionApp.getScmUrl().concat("/api/vfs", storageLocation, '/', subscription);
-                        alert('new url:' + scm);
                         that.functionApp.saveFile(scm, JSON.stringify(entry)).subscribe();  
                     });  
                 });                        
             });
         });
+
+        // 4. Clear input (clear dirty state OR cancel altogether ?)
+        this._broadcastService.clearDirtyState('function_integrate', true);
+        this._portalService.setDirtyState(false);
+        this.isDirty = false;
     }
 
     private getBYOBStorageLocation() {
@@ -646,12 +649,13 @@ export class BindingComponent {
     }
 
     private subscribeToGraphResource(subscription: GraphSubscription, token: string) {
-        var url = "https://graph.microsoft.com/v1.0/subscriptions";
+        var url = Constants.MSGraphResource + "/v" +
+            Constants.latestMSGraphVersion + "/" +
+            "subscriptions";
         var headers = new Headers();
         headers.append('Content-Type', 'application/json');
         headers.append('Authorization', `Bearer ${token}`);
         var content = JSON.stringify(subscription);
-        alert(content);
         return this._cacheService.post(url, null, headers, JSON.stringify(subscription))
             .map(r => {
                 let newSubscription: GraphSubscription = r.json();

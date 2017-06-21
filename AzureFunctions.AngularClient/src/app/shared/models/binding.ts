@@ -162,12 +162,14 @@ export interface Action {
 }
 
 export class Moniker {
-    public resource: string;
-    public principalId: string;
+    public Resource: string;
+    public IdToken: string;
+    public PrincipalId: string;
 
-    constructor(resource: string, principalId: string) {
-        resource = resource;
-        principalId = principalId;
+    constructor(resource: string, idToken: string, principalId: string) {
+        this.Resource = resource;
+        this.IdToken = idToken;
+        this.PrincipalId = principalId;
     }
 }
 
@@ -193,9 +195,9 @@ export class GraphSubscriptionEntry {
     public ClientState: string;
     public Moniker: string;
 
-    constructor(SubscriptionId: string, Moniker: string, ClientState?: string) {
+    constructor(SubscriptionId: string, ClientState: string, Moniker: string, ) {
         this.SubscriptionId = SubscriptionId;
-        this.Moniker = Moniker;
         this.ClientState = ClientState;
+        this.Moniker = Moniker;
     }
 }
