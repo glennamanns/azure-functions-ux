@@ -19,6 +19,9 @@ export class BindingInputBase<T>
     changeValue: (newValue?: any) => void;
     placeholder: string;
     explicitSave: boolean = false;
+
+    counterpartToDisable: string;
+    isDisabled: boolean = false;
 }
 
 export class CheckboxInput extends BindingInputBase<boolean>{

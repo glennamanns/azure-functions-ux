@@ -61,7 +61,7 @@ export class BindingComponent {
     public hasInputsToShow = false;
     public isDirty: boolean = false;
     public isDocShown: boolean = false;
-    public GraphWebhook: boolean = false;
+    public GraphWebhookTrigger: boolean = false;
     public functionApp: FunctionApp;
     // While there are no uses for this in the code, it's used in
     // a template for the bindings that comes from the templates repo.
@@ -255,7 +255,7 @@ export class BindingComponent {
                 this.newFunction = true;
             }
 
-            this.GraphWebhook = that.bindingValue.type == BindingType.GraphWebhook;
+            this.GraphWebhookTrigger = that.bindingValue.type == BindingType.GraphWebhookTrigger;
 
             this.model.actions = [];
             this.model.warnings = [];
@@ -415,11 +415,30 @@ export class BindingComponent {
                             var ddInput = this.handleExclusivityRule(rule, isHidden);
                             this.model.inputs.splice(0, 0, ddInput);
                         }
-                        else if (rule.type == "exclusivitySave") {
+                        else if (rule.type === "exclusivitySave") {
                             var ddInput = this.handleExclusivityRule(rule, isHidden);
                             // Want to save value of input used to hide/show other settings
                             ddInput.explicitSave = true;
                             this.model.inputs.splice(0, 0, ddInput);
+                        }
+                        else if (rule.type === "NAND") {
+                            // should be two values corresponding to two inputs; cannot both be active
+                            if (rule.values.length == 2) {
+                                var inputOneId = rule.values[0].value;
+                                var inputTwoId = rule.values[1].value;
+                                var inputOne = this.model.inputs.find(input => {
+                                    return input.id === inputOneId;
+                                });
+                                var inputTwo = this.model.inputs.find(input => {
+                                    return input.id === inputTwoId;
+                                });
+
+                                inputOne.counterpartToDisable = inputTwoId;
+                                inputTwo.counterpartToDisable = inputOneId;
+
+                                inputTwo.isDisabled = typeof inputOne.value != "undefined" && inputOne.value != "";
+                                inputOne.isDisabled = typeof inputTwo.value != "undefined" && inputTwo.value != "";
+                            }
                         }
                     });
                 }
@@ -488,11 +507,10 @@ export class BindingComponent {
 
             // Handle prepending and appending % in case of principal ID for MS Graph tokens
             // Users can either input an app setting or an expression to be evaluated
-            // TODO: make this cleaner
             if (input instanceof TokenInput && input.resource == ResourceType.MSGraph) {
 
                 var val;
-                if (input.value.startsWith("{") || input.value.startsWith("%")) {
+                if (typeof input.value == "undefined" || input.value.startsWith("{") || input.value.startsWith("%") || input.value == "") {
                     val = input.value;
                 } else {
                     val = "%".concat(input.value.concat("%"));
@@ -504,6 +522,7 @@ export class BindingComponent {
                         name: input.id,
                         value: val
                     }
+                    this.bindingValue.settings.push(setting);
                 }           
             } else {
                 if (setting) {

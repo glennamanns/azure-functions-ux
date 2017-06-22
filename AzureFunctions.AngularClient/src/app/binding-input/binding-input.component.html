@@ -20,7 +20,8 @@
                [(ngModel)]="input.value"
                type="text"
                placeholder="{{input.placeholder}}"
-               [ngClass]="{'input-error':!!input.errorText}">
+               [ngClass]="{'input-error':!!input.errorText}"
+               [disabled]=input.isDisabled>
 
         <input [fnWriteAccess]="functionApp"
                *ngIf="input.type === 'int'" id="{{input.id}}"
@@ -88,16 +89,16 @@
         </div>
     </div>
 
-  <div *ngIf="input.type === 'token'" class="picker-container">
+  <div *ngIf="input?.type === 'token'" class="picker-container">
     <!-- Show drop-down menu of potential app settings -->
     <input [fnWriteAccess]="functionApp"
            type="text"
            [(ngModel)]="input.value"
-           list="input.id"
+           [attr.list]=input.id
            (ngModelChange)="inputChanged($event)"
-           [disabled]="input.isDisabled" />
+           [disabled]=input.isDisabled />
 
-    <datalist id="input.id">
+    <datalist id="{{input.id}}">
       <option *ngFor="let item of input.items" [value]="item">
     </datalist>
 
