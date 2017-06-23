@@ -62,6 +62,7 @@ export interface Setting {
     validators?: Validator[];
     placeholder?: string;
     metadata?: any;
+    isHidden?: boolean;
 }
 
 export interface Rule {
@@ -77,6 +78,12 @@ export interface RuleValue {
     display: string;
     hiddenSettings: string[];
     shownSettings: string[];
+    shownCheckboxOptions: CheckboxListOptions;
+}
+
+export interface CheckboxListOptions {
+    name: string;
+    values: EnumOption[];
 }
 
 export interface Warning {
@@ -159,6 +166,13 @@ export interface Action {
 
     settingValues: string[];
     templateId: string;
+}
+
+export enum ODataTypeMapping {
+    Message = <any>"#Microsoft.Graph.Message",
+    Contact = <any>"#Microsoft.Graph.Contact",
+    Drive = <any>"#Microsoft.Graph.Drive",
+    Event = <any>"#Microsoft.Graph.Event"
 }
 
 export class Moniker {

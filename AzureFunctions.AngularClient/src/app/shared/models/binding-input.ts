@@ -104,6 +104,12 @@ export class CheckBoxListInput extends BindingInputBase<any>{
         });
     }
 
+    clear() {
+        this.enum.forEach((v) => {
+            this.value[v.value] = false;
+        });
+    }
+
     getArrayValue(): string[] {
         var result = [];
         for (var property in this.value) {

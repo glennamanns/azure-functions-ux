@@ -12,7 +12,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { AiService } from '../shared/services/ai.service';
 
 import { BindingInputBase, CheckboxInput, TextboxInput, TextboxIntInput, LabelInput, SelectInput, PickerInput, CheckBoxListInput, TokenInput } from '../shared/models/binding-input';
-import { Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType, Moniker, GraphSubscription, GraphSubscriptionEntry } from '../shared/models/binding';
+import { Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType, Moniker, GraphSubscription, GraphSubscriptionEntry, ODataTypeMapping } from '../shared/models/binding';
 import { BindingManager } from '../shared/models/binding-manager';
 import { BindingInputList } from '../shared/models/binding-input-list';
 import { BroadcastService } from '../shared/services/broadcast.service';
@@ -63,6 +63,7 @@ export class BindingComponent {
     public isDocShown: boolean = false;
     public GraphWebhookTrigger: boolean = false;
     public functionApp: FunctionApp;
+
     // While there are no uses for this in the code, it's used in
     // a template for the bindings that comes from the templates repo.
     // "warnings": [
@@ -240,6 +241,63 @@ export class BindingComponent {
         return ddInput;
     }
 
+    handleChangeOptionsDisplayedRule(rule: Rule, isHidden: boolean) {
+        // Allow the value of a select input determine which options of a check box list are displayed
+        var ddValue = rule.values[0].value;
+
+        rule.values.forEach((value) => {
+            var findResult = this.bindingValue.settings.find((s) => {
+                return s.name === value.value && s.value;
+            });
+            if (findResult) {
+                ddValue = value.value;
+            }
+        });
+
+        let ddInput = new SelectInput();
+        ddInput.id = rule.name;
+        ddInput.isHidden = isHidden;
+        ddInput.label = rule.label;
+        ddInput.help = rule.help;
+        ddInput.value = ddValue;
+        ddInput.enum = rule.values;
+        ddInput.changeValue = () => {
+            var rules = <Rule[]><any>ddInput.enum;
+            rule.values.forEach((v) => {
+                if (ddInput.value == v.value) {
+                    var checkBoxInput = this.model.inputs.find((input) => {
+                        return input.id === v.shownCheckboxOptions.name;
+                    });
+                    if (checkBoxInput) {
+                        checkBoxInput.isHidden = isHidden ? true : false;
+                    }
+                    var setting = this.bindingValue.settings.find((s2) => {
+                        return s2.name === v.shownCheckboxOptions.name;
+                    });
+                    if (setting) {
+                        setting.noSave = isHidden ? true : false;
+                    }
+                    if (checkBoxInput instanceof CheckBoxListInput) {
+                        // Change which options are shown
+                        checkBoxInput.enum = v.shownCheckboxOptions.values;
+                        // Reset selected options
+                        checkBoxInput.clear();
+                    }
+
+                }
+            });
+            //http://stackoverflow.com/questions/35515254/what-is-a-dehydrated-detector-and-how-am-i-using-one-here
+            setTimeout(() => this.model.orderInputs(), 0);
+
+
+        };
+        if (isHidden) {
+            ddInput.changeValue();
+        }
+
+        return ddInput;
+    }
+
     private _updateBinding(value: UIFunctionBinding) {
         this.isDirty = false;
         var that = this;
@@ -293,7 +351,7 @@ export class BindingComponent {
                         case SettingType.int:
                             let intInput = new TextboxIntInput();
                             intInput.id = setting.name;
-                            intInput.isHidden = isHidden;
+                            intInput.isHidden = setting.isHidden || isHidden;
                             intInput.label = this.replaceVariables(setting.label, bindings.variables);
                             intInput.required = setting.required;
                             intInput.value = settingValue;
@@ -308,7 +366,7 @@ export class BindingComponent {
                                 input.resource = setting.resource;
                                 input.items = this._getResourceAppSettings(setting.resource);
                                 input.id = setting.name;
-                                input.isHidden = isHidden;
+                                input.isHidden = setting.isHidden || isHidden;;
                                 input.label = this.replaceVariables(setting.label, bindings.variables);
                                 input.required = setting.required;
                                 input.value = settingValue;
@@ -322,7 +380,7 @@ export class BindingComponent {
                             } else {
                                 let input = new TextboxInput();
                                 input.id = setting.name;
-                                input.isHidden = isHidden;
+                                input.isHidden = setting.isHidden || isHidden;;
                                 input.label = this.replaceVariables(setting.label, bindings.variables);
                                 input.required = setting.required;
                                 input.value = settingValue;
@@ -356,7 +414,7 @@ export class BindingComponent {
                         case SettingType.enum:
                             let ddInput = new SelectInput();
                             ddInput.id = setting.name;
-                            ddInput.isHidden = isHidden;
+                            ddInput.isHidden = setting.isHidden || isHidden;;
                             ddInput.label = setting.label;
                             ddInput.enum = setting.enum;
                             ddInput.value = settingValue || setting.enum[0].value;
@@ -366,7 +424,7 @@ export class BindingComponent {
                         case SettingType.checkBoxList:
                             let cblInput = new CheckBoxListInput();
                             cblInput.id = setting.name;
-                            cblInput.isHidden = isHidden;
+                            cblInput.isHidden = setting.isHidden || isHidden;;
                             cblInput.label = setting.label;
                             cblInput.enum = setting.enum;
                             cblInput.value = settingValue;
@@ -377,7 +435,7 @@ export class BindingComponent {
                         case SettingType.boolean:
                             let chInput = new CheckboxInput();
                             chInput.id = setting.name;
-                            chInput.isHidden = isHidden;
+                            chInput.isHidden = setting.isHidden || isHidden;;
                             chInput.type = setting.value;
                             chInput.label = this.replaceVariables(setting.label, bindings.variables);
                             chInput.required = false;
@@ -390,7 +448,7 @@ export class BindingComponent {
                             tokenInput.resource = setting.resource;
                             tokenInput.items = this._getResourceAppSettings(setting.resource);
                             tokenInput.id = setting.name;
-                            tokenInput.isHidden = isHidden;
+                            tokenInput.isHidden = setting.isHidden || isHidden;;
                             tokenInput.label = this.replaceVariables(setting.label, bindings.variables);
                             tokenInput.required = setting.required;
                             tokenInput.value = settingValue;
@@ -439,6 +497,12 @@ export class BindingComponent {
                                 inputTwo.isDisabled = typeof inputOne.value != "undefined" && inputOne.value != "";
                                 inputOne.isDisabled = typeof inputTwo.value != "undefined" && inputTwo.value != "";
                             }
+                        }
+                        else if (rule.type === "changeOptionsDisplayed") {
+                            var ddInput = this.handleChangeOptionsDisplayedRule(rule, isHidden);
+                            // Want to save value of input used to hide/show other settings
+                            ddInput.explicitSave = true;
+                            this.model.inputs.splice(0, 0, ddInput);
                         }
                     });
                 }
@@ -549,9 +613,6 @@ export class BindingComponent {
 
             if (input instanceof CheckBoxListInput && setting) {
                 setting.value = (<CheckBoxListInput>input).getArrayValue();
-                if (input.id === "ChangeType") { // Convert from string[] to string for Graph Webhook
-                    setting.value = String(setting.value);
-                }
             }
 
             if (setting && setting.name === "route") {
@@ -652,10 +713,20 @@ export class BindingComponent {
             });
         });
 
-        // 4. Clear input (clear dirty state OR cancel altogether ?)
-        this._broadcastService.clearDirtyState('function_integrate', true);
-        this._portalService.setDirtyState(false);
-        this.isDirty = false;
+        // 4. Directly map the resource to the corresponding OData Type 
+        // used to transform webhook notifications into useful objects
+        var resourceKeys = Object.keys(ODataTypeMapping);
+        resourceKeys.forEach(key => {
+            if (subscriptionResource.value.search(new RegExp(key, "i")) != -1) {
+                var typeInput = this.model.inputs.find((input) => {
+                    return input.id === "Type";
+                });
+                
+                typeInput.value = ODataTypeMapping[key];
+            }
+        })
+        // 5. Save inputs to .json like normal
+        this.saveClicked()
     }
 
     private getBYOBStorageLocation() {
