@@ -40,6 +40,7 @@ export class Constants {
     public static ReadWriteMode = 'readWrite'.toLocaleLowerCase();
     public static ReadOnlyMode = 'readOnly'.toLocaleLowerCase();
 
+    public static OIDKey = 'http://schemas.microsoft.com/identity/claims/objectidentifier';
     public static BYOBTokenMapSettingName = 'BYOB_TokenMap';
     public static defaultBYOBLocation = 'D:\home\data\byob_graphmap';
     public static MSGraphResource = 'https://graph.microsoft.com';

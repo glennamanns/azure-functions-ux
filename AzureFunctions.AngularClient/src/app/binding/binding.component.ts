@@ -12,7 +12,7 @@ import { TranslateService, TranslatePipe } from '@ngx-translate/core';
 import { AiService } from '../shared/services/ai.service';
 
 import { BindingInputBase, CheckboxInput, TextboxInput, TextboxIntInput, LabelInput, SelectInput, PickerInput, CheckBoxListInput, TokenInput } from '../shared/models/binding-input';
-import { Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType, Moniker, GraphSubscription, GraphSubscriptionEntry, ODataTypeMapping } from '../shared/models/binding';
+import { Binding, DirectionType, SettingType, BindingType, UIFunctionBinding, UIFunctionConfig, Rule, Setting, Action, ResourceType, Moniker, GraphSubscription, GraphSubscriptionEntry, EnumOption, ODataTypeMapping } from '../shared/models/binding';
 import { BindingManager } from '../shared/models/binding-manager';
 import { BindingInputList } from '../shared/models/binding-input-list';
 import { BroadcastService } from '../shared/services/broadcast.service';
@@ -261,6 +261,7 @@ export class BindingComponent {
         ddInput.help = rule.help;
         ddInput.value = ddValue;
         ddInput.enum = rule.values;
+
         ddInput.changeValue = () => {
             var rules = <Rule[]><any>ddInput.enum;
             rule.values.forEach((v) => {
@@ -278,24 +279,41 @@ export class BindingComponent {
                         setting.noSave = isHidden ? true : false;
                     }
                     if (checkBoxInput instanceof CheckBoxListInput) {
-                        // Change which options are shown
-                        checkBoxInput.enum = v.shownCheckboxOptions.values;
-                        // Reset selected options
-                        checkBoxInput.clear();
+                        // Change which options are shown & reset selected options
+                        if (!this.enumOptionsEqual(checkBoxInput.enum, v.shownCheckboxOptions.values)) {
+                            checkBoxInput.enum = v.shownCheckboxOptions.values;
+                            checkBoxInput.clear();
+                        }
                     }
 
                 }
             });
             //http://stackoverflow.com/questions/35515254/what-is-a-dehydrated-detector-and-how-am-i-using-one-here
             setTimeout(() => this.model.orderInputs(), 0);
-
-
         };
         if (isHidden) {
             ddInput.changeValue();
         }
 
         return ddInput;
+    }
+
+    private enumOptionsEqual(current: EnumOption[], newOptions: EnumOption[]) {
+        // Compare two enum arrays by comparing the display, value at each index. They are not guaranteed be in the same order.
+        if (current.length == newOptions.length) {
+            for (var i = 0; i < current.length; i++) {
+                var equivalentEnumOption = newOptions.find(newOption => {
+                    return newOption.display === current[i].display && newOption.value === current[i].value;
+                })
+                if (!equivalentEnumOption) {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+
+        return true;
     }
 
     private _updateBinding(value: UIFunctionBinding) {
@@ -500,6 +518,7 @@ export class BindingComponent {
                         }
                         else if (rule.type === "changeOptionsDisplayed") {
                             var ddInput = this.handleChangeOptionsDisplayedRule(rule, isHidden);
+
                             // Want to save value of input used to hide/show other settings
                             ddInput.explicitSave = true;
                             this.model.inputs.splice(0, 0, ddInput);
@@ -689,7 +708,7 @@ export class BindingComponent {
                 var user_claims = json.user_claims;
                 var oid;
                 for (var i = 0; i < user_claims.length; i++) {
-                    if (user_claims[i].typ == "http://schemas.microsoft.com/identity/claims/objectidentifier") {
+                    if (user_claims[i].typ == Constants.OIDKey) {
                         oid = user_claims[i].val;
                     }
                 }
