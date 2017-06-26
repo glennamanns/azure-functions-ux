@@ -45,6 +45,9 @@ export class Constants {
     public static defaultBYOBLocation = 'D:\home\data\byob_graphmap';
     public static MSGraphResource = 'https://graph.microsoft.com';
     public static latestMSGraphVersion = '1.0';
+    public static WebhookHandlerFunctionName = "RefreshO365Subscriptions";
+    public static WebhookHandlerFunctionId = "TimerTrigger-CSharpWebhookHandler";
+    public static WebhookFunctionName = "O365Webhook";
 }
 
 export class SiteTabIds{

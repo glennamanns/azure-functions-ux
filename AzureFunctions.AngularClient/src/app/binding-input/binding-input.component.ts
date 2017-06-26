@@ -16,6 +16,7 @@ import { CacheService } from './../shared/services/cache.service';
 import { ArmObj } from './../shared/models/arm/arm-obj';
 import { ArmService } from './../shared/services/arm.service';
 import { Subject } from 'rxjs/Subject';
+import { Constants } from "app/shared/models/constants";
 
 declare var require: any
 
@@ -104,7 +105,7 @@ export class BindingInputComponent {
                 var user_claims = json.user_claims;
                 var oid;
                 for (var i = 0; i < user_claims.length; i++) {
-                    if (user_claims[i].typ == "http://schemas.microsoft.com/identity/claims/objectidentifier") {
+                    if (user_claims[i].typ == Constants.OIDKey) {
                         oid = user_claims[i].val;
                     }
                 }
