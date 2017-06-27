@@ -281,11 +281,10 @@ export class BindingComponent {
                     if (checkBoxInput instanceof CheckBoxListInput) {
                         // Change which options are shown & reset selected options
                         if (!this.enumOptionsEqual(checkBoxInput.enum, v.shownCheckboxOptions.values)) {
-                            checkBoxInput.enum = v.shownCheckboxOptions.values;
                             checkBoxInput.clear();
+                            checkBoxInput.enum = v.shownCheckboxOptions.values;                            
                         }
                     }
-
                 }
             });
             //http://stackoverflow.com/questions/35515254/what-is-a-dehydrated-detector-and-how-am-i-using-one-here
