@@ -78,7 +78,7 @@ export class BindingInputComponent {
     }
 
     openLogin(input: PickerInput) {
-        var WindowsAzure = require('aadlogin/azure-mobile-apps-client');
+        var WindowsAzure = require('azure-mobile-apps/azure-mobile-apps-client');
         var mainURL = this.functionApp.getMainSiteUrl();
         var client = new WindowsAzure.MobileServiceClient(mainURL);
 
