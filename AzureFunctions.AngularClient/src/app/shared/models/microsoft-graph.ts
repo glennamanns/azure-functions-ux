@@ -5,6 +5,11 @@ export module MSGraphConstants {
         public static ApiVersion = '1.6';
         public static AADReplyUrl = '/.auth/login/aad/callback';
     }
+    
+    export class RequiredResources {
+        public static MicrosoftGraph = '00000003-0000-0000-c000-000000000000';
+        public static WindowsAzureActiveDirectory = '00000002-0000-0000-c000-000000000000';
+    }
 }
 
 export enum ODataTypeMapping {
