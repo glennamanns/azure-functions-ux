@@ -1,5 +1,12 @@
 ﻿// Microsoft Graph / O365 binding definitions
 
+export module MSGraphConstants {
+    export class General {
+        public static ApiVersion = '1.6';
+        public static AADReplyUrl = '/.auth/login/aad/callback';
+    }
+}
+
 export enum ODataTypeMapping {
     Message = <any>"#Microsoft.Graph.Message",
     Contact = <any>"#Microsoft.Graph.Contact",

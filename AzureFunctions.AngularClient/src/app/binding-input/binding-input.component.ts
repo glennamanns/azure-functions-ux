@@ -16,6 +16,7 @@ import { CacheService } from './../shared/services/cache.service';
 import { ArmObj } from './../shared/models/arm/arm-obj';
 import { ArmService } from './../shared/services/arm.service';
 import { Constants } from '../shared/models/constants';
+import { MobileAppsClient } from "../shared/models/mobile-apps-client";
 import { AiService } from '../shared/services/ai.service';
 import { MicrosoftGraphHelper } from '../pickers/microsoft-graph/microsoft-graph-helper';
 
@@ -144,7 +145,7 @@ export class BindingInputComponent {
         }
 
         if (this.pickerName === "AppSetting" && input.id === "PrincipalId") {
-            let helper = new MicrosoftGraphHelper(this._cacheService, this._aiService, this.functionApp)
+            let helper = new MicrosoftGraphHelper(this.functionApp, this._cacheService, this._aiService)
             helper.openLogin(picker).then(values => {
                 this._globalStateService.setBusyState();
                 this.functionApp.createApplicationSetting(values.appSettingName, values.OID).subscribe(

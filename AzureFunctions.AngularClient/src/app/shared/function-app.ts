@@ -1877,4 +1877,20 @@ export class FunctionApp {
                 });
         }
     }
+
+    // Set multiple auth settings at once
+    createAuthSettings(newAuthSettings: Map<string, any>): Observable<any> {
+        if (newAuthSettings.size > 0) {
+            return this._cacheService.postArm(`${this.site.id}/config/authsettings/list`, true).flatMap(
+                r => {
+                    var authSettings: ArmObj<any> = r.json();
+                    newAuthSettings.forEach((value, key) => {
+                        authSettings.properties[key] = value;
+                    });
+                    return this._cacheService.putArm(authSettings.id, this._armService.websiteApiVersion, authSettings);
+                });
+        } else {
+            return Observable.of(null);
+        }
+    }
 }
