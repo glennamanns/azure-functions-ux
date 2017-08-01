@@ -16,7 +16,6 @@ import { CacheService } from './../shared/services/cache.service';
 import { ArmObj } from './../shared/models/arm/arm-obj';
 import { ArmService } from './../shared/services/arm.service';
 import { Constants } from '../shared/models/constants';
-import { MobileAppsClient } from "../shared/models/mobile-apps-client";
 import { AiService } from '../shared/services/ai.service';
 import { MicrosoftGraphHelper } from '../pickers/microsoft-graph/microsoft-graph-helper';
 

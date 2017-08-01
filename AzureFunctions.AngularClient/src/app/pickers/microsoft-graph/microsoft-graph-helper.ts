@@ -11,11 +11,9 @@ import { ConfigService } from '../../shared/services/config.service';
 import { ArmObj } from '../../shared/models/arm/arm-obj';
 import { Constants } from "../../shared/models/constants";
 import { MobileAppsClient } from "../../shared/models/mobile-apps-client";
-import { BindingManager } from '../../shared/models/binding-manager';
 import { BindingType, Action, Binding } from '../../shared/models/binding';
 import { BindingList } from '../../shared/models/binding-list';
 import { CheckBoxListInput, PickerInput } from '../../shared/models/binding-input';
-import { Template } from '../../shared/models/template-picker';
 import { FunctionTemplateMetadata } from '../../shared/models/function-template';
 import { Moniker, GraphSubscription, GraphSubscriptionEntry, ODataTypeMapping, MSGraphConstants } from '../../shared/models/microsoft-graph';
 
