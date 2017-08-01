@@ -25,8 +25,6 @@ export class MicrosoftGraphHelper {
     public function?: FunctionNewComponent;
     private _dataRetriever: MobileAppsClient;
     private _token: string;
-    private _appSettings: { [key: string]: string };
-    private _resource: string;
     private setClientSecret = false;
     private necessaryAAD: any = {};
     private necessaryMSGraph: any = {};
